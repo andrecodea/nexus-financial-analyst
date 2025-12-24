@@ -391,6 +391,19 @@ for chunk in response.iter_content(chunk_size=None):
 
 ## 🔒 Security
 
+### Security Features ✅
+
+The backend implements comprehensive security measures:
+
+- **CORS Protection**: Configured with explicit origin allowlist
+- **Security Headers**: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection
+- **Input Validation**: Message content and length validation (10K char max)
+- **Secure Logging**: Structured logging without sensitive data exposure
+- **Environment Validation**: Required variables checked at startup
+- **Error Handling**: Generic error messages prevent information disclosure
+
+See [SECURITY.md](../SECURITY.md) for complete security guidelines and [VALIDATION_REPORT.md](../VALIDATION_REPORT.md) for security audit results.
+
 ### Environment Variables
 
 - **Never commit** `.env` files
@@ -405,7 +418,7 @@ Required API keys:
 
 ### CORS Configuration
 
-CORS is configured in `main.py`. Update for production:
+CORS is configured in `main.py` with restricted origins. Update for production:
 
 ```python
 app.add_middleware(
@@ -416,6 +429,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 ```
+
+Current development configuration:
+```python
+allow_origins=["http://localhost:5173", "http://localhost:3000"]
+```
+
+### Security Headers
+
+All responses include security headers:
+- `X-Content-Type-Options: nosniff` - Prevents MIME sniffing
+- `X-Frame-Options: DENY` - Prevents clickjacking
+- `X-XSS-Protection: 1; mode=block` - XSS protection
+
+### Input Validation
+
+The API validates all inputs:
+- Empty content is rejected (HTTP 400)
+- Messages > 10,000 characters are rejected (HTTP 400)
+- Invalid request structures are rejected by Pydantic validation
+
+### Logging Security
+
+- All `print()` statements replaced with structured logging
+- Query content truncated to 50 characters in logs
+- API keys never logged
+- Only error types logged, not sensitive details
 
 ## 🐛 Troubleshooting
 

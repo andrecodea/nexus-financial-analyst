@@ -288,6 +288,14 @@ taskkill /PID <PID> /F
 - Use `backend/.env.example` como modelo para variáveis de ambiente
 - Arquivos `.env` já estão em `.gitignore` (já configurado)
 
+📋 **Recursos de Segurança:**
+
+- Consulte [SECURITY.md](./SECURITY.md) para diretrizes abrangentes de segurança e melhores práticas
+- Consulte [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) para resultados da validação de segurança
+- Revise a lista de verificação de implantação em produção antes de colocar no ar
+
+O projeto foi validado quanto a vazamentos de dados e vulnerabilidades de segurança. Consulte o relatório de validação para detalhes.
+
 ## 🤝 Contribuindo
 
 1. Faça fork do repositório
