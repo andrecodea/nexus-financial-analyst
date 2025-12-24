@@ -113,8 +113,8 @@ Maintain a professional, neutral, and data-driven tone.
 @app.post('/api/chat')
 async def chat(request: RequestObject):
     try:
-        # Validate input
-        if not request.prompt or not request.prompt.content:
+        # Validate input content
+        if not request.prompt.content:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Message content is required"
@@ -152,7 +152,8 @@ async def chat(request: RequestObject):
                                 yield content
             except Exception as e:
                 logger.error(f"Error in stream generation: {type(e).__name__}")
-                yield f"Error: An unexpected error occurred during processing."
+                # Don't yield error to stream - let outer exception handler deal with it
+                raise
 
         return StreamingResponse(
             generate(),
