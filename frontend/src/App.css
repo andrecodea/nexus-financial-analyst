@@ -1,0 +1,57 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+.app-container, .app-container * {
+  font-family: 'Inter', sans-serif !important;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+.app-container {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* === REMOÇÃO TOTAL DA MARCA C1 (Sidebar + Header) === */
+
+/* 1. Esconde qualquer SVG (ícone) dentro de áreas de cabeçalho */
+/* Isso pega tanto o sidebar quanto o header principal */
+[class*="Header"] svg,
+[class*="Navbar"] svg,
+[class*="TopBar"] svg,
+header svg {
+    display: none !important;
+}
+
+/* 2. Esconde o texto "C1 Chat" especificamente */
+[class*="Header"] h1,
+[class*="Header"] span,
+[class*="Navbar"] span,
+header span {
+    font-size: 0 !important;
+    color: transparent !important;
+}
+
+/* 3. (Opcional) Injeta "Nexus Financial" no lugar */
+/* Se você quiser deixar vazio, apenas não inclua este bloco */
+[class*="Header"]::before,
+[class*="Navbar"]::before {
+    content: "Nexus Financial";
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    margin-left: 16px;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
