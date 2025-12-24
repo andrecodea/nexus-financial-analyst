@@ -1,0 +1,27 @@
+# Node
+node_modules/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+venv/
+.venv/
+backend/.venv/
+
+# Env files
+.env
+.env.*
+backend/.env
+
+# OS
+.DS_Store
+
+# IDE/editor
+.vscode/
+*.swp
+
+# Build outputs
+frontend/dist/
