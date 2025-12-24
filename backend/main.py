@@ -1,9 +1,10 @@
 from dotenv import load_dotenv
 from typing import AsyncGenerator
+import logging
 
 # Server stuff
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langchain.tools import tool
@@ -15,6 +16,13 @@ from langchain_core.runnables import RunnableConfig
 from agent import get_agent
 import tomllib
 
+# Configure logging to avoid sensitive data
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 # Data Schemas
@@ -22,6 +30,15 @@ from schemas import RequestObject, PromptObject
 
 # App
 app = FastAPI(title="Nexus Financial Assistant")
+
+# Configure CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Frontend dev servers
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 agent = get_agent()
 
@@ -95,40 +112,68 @@ Maintain a professional, neutral, and data-driven tone.
 
 @app.post('/api/chat')
 async def chat(request: RequestObject):
-    config: RunnableConfig = {"configurable": {"thread_id": request.threadId}}
+    try:
+        # Validate input
+        if not request.prompt or not request.prompt.content:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Message content is required"
+            )
+        
+        # Limit message length to prevent abuse
+        if len(request.prompt.content) > 10000:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Message too long. Maximum 10000 characters allowed."
+            )
+        
+        config: RunnableConfig = {"configurable": {"thread_id": request.threadId}}
 
-    messages = [
-        SystemMessage(content=system_message),
-        HumanMessage(content=request.prompt.content)
-    ]
+        messages = [
+            SystemMessage(content=system_message),
+            HumanMessage(content=request.prompt.content)
+        ]
 
-    async def generate() -> AsyncGenerator[str, None]:
-        async for event in agent.astream_events(
-            {"messages": messages},
-            config=config,
-            version="v1"
-        ): 
-            kind = event["event"]
+        async def generate() -> AsyncGenerator[str, None]:
+            try:
+                async for event in agent.astream_events(
+                    {"messages": messages},
+                    config=config,
+                    version="v1"
+                ): 
+                    kind = event["event"]
 
-            # Filtra pelos eventos de texto
-            if kind == "on_chat_model_stream":
-                chunk = event["data"].get("chunk")
-                if chunk:
-                    content = chunk.content
-                    if content:
-                        yield content
+                    # Filtra pelos eventos de texto
+                    if kind == "on_chat_model_stream":
+                        chunk = event["data"].get("chunk")
+                        if chunk:
+                            content = chunk.content
+                            if content:
+                                yield content
+            except Exception as e:
+                logger.error(f"Error in stream generation: {type(e).__name__}")
+                yield f"Error: An unexpected error occurred during processing."
 
-
-
-    return StreamingResponse(
-        generate(),
-        media_type='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-active',
-            'X-Accel-Buffering': 'no'
-        }
-    )
+        return StreamingResponse(
+            generate(),
+            media_type='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-active',
+                'X-Accel-Buffering': 'no',
+                'X-Content-Type-Options': 'nosniff',
+                'X-Frame-Options': 'DENY',
+                'X-XSS-Protection': '1; mode=block'
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in chat endpoint: {type(e).__name__}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
+        )
         
         
 if __name__ == "__main__":
